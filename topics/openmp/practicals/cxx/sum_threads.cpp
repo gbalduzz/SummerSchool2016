@@ -8,7 +8,7 @@ int main(void){
 
     int sum=0;
 
-    #pragma omp parallel
+#pragma omp parallel reduction(+:sum)
     {
         sum += omp_get_thread_num()+1;
     }
