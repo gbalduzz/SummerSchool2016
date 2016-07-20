@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Status status;
 
     if (size != 2) {
         printf("please run this with 2 processors\n");
@@ -39,11 +40,14 @@ int main(int argc, char *argv[])
         printf("enter a number:\n");
         fflush(stdout);
         scanf("%d",&number);
+	MPI_Send(&number, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
     }
     /* send the contents of number from rank 0 to rank 1 using MPI_Send --- MPI_Recv */
 
-    if (rank == 1)
+    if (rank == 1){
+      MPI_Recv(&number, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
         printf("The communicated number is %i\n", number);
+    }
     MPI_Finalize();
     return 0;
 }
