@@ -80,9 +80,20 @@ int main(int argc, char *argv[])
         data[i]=rank;
     }
 
+<<<<<<< HEAD
     rank_bottom=(rank+4)%16;/* find the rank of the top neighbor */
     rank_top=(rank-4+16)%16;/* find the rank of the bottom neighbor */
     double* bottom_data = &data[SUBDOMAIN*(SUBDOMAIN-1)];
+=======
+    rank_bottom=(rank-4+16)%16;/* find the rank of the top neighbor */
+    rank_top=(rank+4)%16;/* find the rank of the bottom neighbor */
+    double top_data[SUBDOMAIN];
+    double bottom_data[SUBDOMAIN];
+    const int bottom_index = DOMAINSIZE*(DOMAINSIZE-1)+1;
+    for(int i=0; i<SUBDOMAIN ; i++){
+      top_data[i] = data[1+i];
+      bottom_data[i] = data[bottom_index+i];
+    }
 
     //  ghost cell exchange with the neighbouring cells to the bottom and to the top using:
     //  a) MPI_Send, MPI_Irecv, MPI_Wait
@@ -92,30 +103,33 @@ int main(int argc, char *argv[])
     //  to the top
 
     // a)
-
-    // b)
-
-    // c)
-   
+/*
     MPI_Sendrecv(&data[0],DOMAINSIZE,MPI_DOUBLE,
 		 rank_top,0,
 		 bottom_data,DOMAINSIZE,MPI_DOUBLE,
 		 rank_top,0,
 		 MPI_COMM_WORLD,&status);
-
-    //  to the bottom
-    // a)
-
-    // b)
-
-    // c)
-    MPI_Sendrecv(bottom_data,DOMAINSIZE,MPI_DOUBLE,
+data,DOMAINSIZE,MPI_DOUBLE,
 		 rank_bottom,0,
 		 &data[0],DOMAINSIZE,MPI_DOUBLE,
 		 rank_bottom,0,
 		 MPI_COMM_WORLD,&status);
+*/
+    MPI_Send(top_data,SUBDOMAIN,MPI_DOUBLE,
+	     rank_top,0,MPI_COMM_WORLD);
 
-    if (rank==9) {
+    MPI_Send(bottom_data,SUBDOMAIN,MPI_DOUBLE,
+	     rank_bottom,0,MPI_COMM_WORLD);
+    MPI_Irecv(data+1,SUBDOMAIN,MPI_DOUBLE,
+	     rank_top,MPI_ANY_TAG,
+	     MPI_COMM_WORLD,&request);
+    MPI_Recv(data+bottom_index,SUBDOMAIN,MPI_DOUBLE,
+	     rank_bottom,MPI_ANY_TAG,
+	     MPI_COMM_WORLD,&status);
+    MPI_Wait(&request,&status);
+
+
+ if (rank==9) {
         printf("data of rank 9 after communication\n");
         for (j=0; j<DOMAINSIZE; j++) {
             for (i=0; i<DOMAINSIZE; i++) {
