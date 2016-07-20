@@ -19,6 +19,7 @@
 #define PING  0 //message tag
 #define PONG  1 //message tag
 #define SIZE  1024
+#define NPONG 3
 
 int main(int argc, char *argv[])
 {
@@ -33,18 +34,23 @@ int main(int argc, char *argv[])
       std::cout<<"Run with 2 ranks \n";
       return -1;
     }
-    
-    if( my_rank ==0){
-      for(int i=0; i<SIZE; i++) buffer[i] = i;
+    if(my_rank == 0) for(int i=0; i<SIZE; i++) buffer[i] = i;
+
+    for(int iter=0; iter<NPONG; iter++){
+
+      if( my_rank ==0){
     	MPI_Send(&buffer, SIZE, MPI_FLOAT, 1, 0, MPI_COMM_WORLD);
 	MPI_Recv(&buffer, SIZE, MPI_FLOAT, 1, 1, MPI_COMM_WORLD, &status);
-    }
+      }
 
-    if(my_rank == 1){
+      if(my_rank == 1){
     	MPI_Recv(&buffer, SIZE, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
 	for(int i=0; i<SIZE; i++) buffer[i] *= 2;
 	MPI_Send(&buffer, SIZE, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
+      }
+    
     }
+
     
     if(my_rank == 0){
       for(int i=0; i<5; i++) std::cout<<buffer[i]<<std::endl;

@@ -1,4 +1,4 @@
-CC=CC
+CC=mpicxx
 CFLAGS=-O3
 EXT=c
 #SUBFIX=_solution

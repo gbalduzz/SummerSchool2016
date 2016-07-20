@@ -29,9 +29,8 @@ int main(int argc, char *argv[])
 
     int numtasks, rank, source=0, dest, tag=1, i;
     Particle p[NELEM];
-    MPI_Datatype particletype, oldtypes[2];
     MPI_Status stat;
-    int blockcounts[2];
+
 
     /* MPI_Aint type is used to be consistent with syntax of MPI_Type_extent */
     MPI_Aint offsets[2], extent;
@@ -41,10 +40,15 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     /* Setup description of the 4 MPI_FLOAT fields x, y, z, velocity */
+      /* Setup description of the 2 MPI_INT fields n, type */
+      /* Now define structured type and commit it */
+  MPI_Datatype particletype;
+  int lengths[]={4,2};
+  MPI_Aint displ[]={ 0, lengths[0]*sizeof(float)};
+  MPI_Datatype old_types[]={MPI_FLOAT,MPI_INT};
 
-    /* Setup description of the 2 MPI_INT fields n, type */
-
-    /* Now define structured type and commit it */
+  MPI_Type_create_struct(2, lengths, displ, old_types, &particletype);
+  MPI_Type_commit(&particletype);
 
     /* setup and send particules */
     if (rank == 0) {

@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     }
 
     rank_bottom=(rank+4)%16;/* find the rank of the top neighbor */
-    rank_top=(rank+4+16)%16;/* find the rank of the bottom neighbor */
+    rank_top=(rank-4+16)%16;/* find the rank of the bottom neighbor */
     double* bottom_data = &data[SUBDOMAIN*(SUBDOMAIN-1)];
 
     //  ghost cell exchange with the neighbouring cells to the bottom and to the top using:
@@ -97,9 +97,9 @@ int main(int argc, char *argv[])
 
     // c)
    
-    MPI_Sendrecv(&data[0],SUBDOMAIN,MPI_DOUBLE,
+    MPI_Sendrecv(&data[0],DOMAINSIZE,MPI_DOUBLE,
 		 rank_top,0,
-		 bottom_data,SUBDOMAIN,MPI_DOUBLE,
+		 bottom_data,DOMAINSIZE,MPI_DOUBLE,
 		 rank_top,0,
 		 MPI_COMM_WORLD,&status);
 
@@ -109,9 +109,9 @@ int main(int argc, char *argv[])
     // b)
 
     // c)
-    MPI_Sendrecv(bottom_data,SUBDOMAIN,MPI_DOUBLE,
+    MPI_Sendrecv(bottom_data,DOMAINSIZE,MPI_DOUBLE,
 		 rank_bottom,0,
-		 &data[0],SUBDOMAIN,MPI_DOUBLE,
+		 &data[0],DOMAINSIZE,MPI_DOUBLE,
 		 rank_bottom,0,
 		 MPI_COMM_WORLD,&status);
 
