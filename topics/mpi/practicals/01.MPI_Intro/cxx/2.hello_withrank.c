@@ -23,11 +23,15 @@ int main(int argc, char *argv[])
     MPI_Init(&argc, &argv);
 
     /* Get the rank of each process */
-
+    int id;
+    MPI_Comm_rank(MPI_COMM_WORLD, id);
     /* Get the size of the communicator */
-
+    int size;
+    MPI_Comm_size(MPI_COMM_WORLD, size);
     /* Write code such that every process writes its rank and the size of the communicator,
      * but only process 0 prints "hello world*/
+    std::cout<<"This is process "<<id<<" of "<<size<<std::endl;
+    if(id == 0) std::cout<<"Hello world!"<<std::endl;
 
     MPI_Finalize();
     return 0;
