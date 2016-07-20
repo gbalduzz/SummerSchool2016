@@ -1,5 +1,5 @@
-CC=mpicxx
-CFLAGS=-O3
+CC=CC
+CFLAGS=-g
 EXT=c
 #SUBFIX=_solution
 
