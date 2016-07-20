@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 {
     int rank, size, i, j, rank_bottom, rank_top;
     double data[DOMAINSIZE*DOMAINSIZE];
-    MPI_Request request[2];
+    MPI_Request request;
     MPI_Status status;
 
     MPI_Init(&argc, &argv);
@@ -80,11 +80,11 @@ int main(int argc, char *argv[])
         data[i]=rank;
     }
 
-    rank_bottom=(rank+4)%16;/* find the rank of the top neighbor */
-    rank_top=(rank+4+16)%16;/* find the rank of the bottom neighbor */
+    rank_bottom=(rank-4+16)%16;/* find the rank of the top neighbor */
+    rank_top=(rank+4)%16;/* find the rank of the bottom neighbor */
     double top_data[SUBDOMAIN];
     double bottom_data[SUBDOMAIN];
-    const int bottom_index = DOMAINSIZE*(DOMAINSIZE-2)+1;
+    const int bottom_index = DOMAINSIZE*(DOMAINSIZE-1)+1;
     for(int i=0; i<SUBDOMAIN ; i++){
       top_data[i] = data[1+i];
       bottom_data[i] = data[bottom_index+i];
@@ -104,20 +104,15 @@ int main(int argc, char *argv[])
       
     MPI_Send(bottom_data,SUBDOMAIN,MPI_DOUBLE,		
 	     rank_bottom,0,MPI_COMM_WORLD);
-    /**/if(rank ==0) std::cout<<"Sent!"<<std::endl;
     MPI_Irecv(data+1,SUBDOMAIN,MPI_DOUBLE,
 	     rank_top,MPI_ANY_TAG,
-	     MPI_COMM_WORLD,request);
-
-    MPI_Irecv(data+bottom_index,SUBDOMAIN,MPI_DOUBLE,
+	     MPI_COMM_WORLD,&request);
+    MPI_Recv(data+bottom_index,SUBDOMAIN,MPI_DOUBLE,
 	     rank_bottom,MPI_ANY_TAG,
-	     MPI_COMM_WORLD,request+1);
-/**/if(rank ==0) std::cout<<"Recv called!"<<std::endl;
-    MPI_Wait(request,&status);
-/**/if(rank ==0) std::cout<<"1 received!"<<std::endl;
-    MPI_Wait(request+1,&status);
-/**/if(rank ==0) std::cout<<"2 received!"<<std::endl;
-   
+	     MPI_COMM_WORLD,&status);
+    MPI_Wait(&request,&status);
+
+    
  if (rank==9) {
         printf("data of rank 9 after communication\n");
         for (j=0; j<DOMAINSIZE; j++) {
