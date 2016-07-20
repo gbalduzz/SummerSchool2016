@@ -26,6 +26,7 @@
  */
 
 #include <stdio.h>
+#include <iostream>
 #include <string.h>
 #include <stdlib.h>
 
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
 
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-    buffer = (char*)malloc(MAX_SIZE*sizeof(char));
+    buffer = new char[MAX_SIZE];
 
     if (my_rank == 0) {
         f = fopen("bandwidth.dat","w");
@@ -62,12 +63,24 @@ int main(int argc, char *argv[])
     length_of_message = INI_SIZE;
 
     while(length_of_message <= MAX_SIZE) {
-        /* Write a loop of NMESSAGES iterations which do a ping pong.
-         * Make the size of the message variable and display the bandwidth for each of them.
-         * What do you observe? (plot it)
-         */
-        start = MPI_Wtime();
-
+      /* Write a loop of NMESSAGES iterations which do a ping pong.
+       * Make the size of the message variable and display the bandwidth for each of them.
+       * What do you observe? (plot it)
+       */
+      start = MPI_Wtime();
+      // **************
+      for(int iter=0; iter<NMESSAGES; iter++){
+	if( my_rank == 0){
+	  MPI_Send(&buffer, length_of_message, MPI_CHAR, 1, 2*iter, MPI_COMM_WORLD);
+	  MPI_Recv(&buffer, length_of_message, MPI_CHAR, 1, 2*iter+1, MPI_COMM_WORLD, &status);
+	}
+	if(my_rank == 1){
+	  MPI_Recv(&buffer, length_of_message, MPI_CHAR, 0, 2*iter, MPI_COMM_WORLD, &status);
+	  //for(int i=0; i<SIZE; i++) buffer[i] *= 2;
+	  MPI_Send(&buffer, length_of_message, MPI_CHAR, 0, 2*iter+1, MPI_COMM_WORLD);
+	}	  
+      }
+	// **************
         stop = MPI_Wtime();
         if (my_rank == 0) {
             time = stop - start;
@@ -95,6 +108,6 @@ int main(int argc, char *argv[])
         fclose(f);
     }
     MPI_Finalize();
-    free(buffer);
+    delete[] buffer;
     return 0;
 }
