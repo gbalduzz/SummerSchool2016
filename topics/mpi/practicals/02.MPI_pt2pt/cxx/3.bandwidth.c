@@ -27,9 +27,8 @@
 
 #include <stdio.h>
 #include <iostream>
-#include <string.h>
-#include <stdlib.h>
-
+#include <fstream>
+#include <string>
 #include <mpi.h>
 
 #define NMESSAGES 100
@@ -47,8 +46,7 @@ int main(int argc, char *argv[])
     double start, stop, time, transfer_time;
     MPI_Status status;
     char* buffer;
-    char output_str[512];
-    FILE* f;
+    std::ofstream f;
 
     MPI_Init(&argc, &argv);
 
@@ -57,7 +55,7 @@ int main(int argc, char *argv[])
     buffer = new char[MAX_SIZE];
 
     if (my_rank == 0) {
-        f = fopen("bandwidth.dat","w");
+        f.open("bandwidth.dat");
     }
 
     length_of_message = INI_SIZE;
@@ -71,13 +69,12 @@ int main(int argc, char *argv[])
       // **************
       for(int iter=0; iter<NMESSAGES; iter++){
 	if( my_rank == 0){
-	  MPI_Send(&buffer, length_of_message, MPI_CHAR, 1, 2*iter, MPI_COMM_WORLD);
-	  MPI_Recv(&buffer, length_of_message, MPI_CHAR, 1, 2*iter+1, MPI_COMM_WORLD, &status);
+	  MPI_Send(buffer, length_of_message, MPI_CHAR, 1, 0, MPI_COMM_WORLD);
+	  MPI_Recv(buffer, length_of_message, MPI_CHAR, 1, 1, MPI_COMM_WORLD, &status);
 	}
 	if(my_rank == 1){
-	  MPI_Recv(&buffer, length_of_message, MPI_CHAR, 0, 2*iter, MPI_COMM_WORLD, &status);
-	  //for(int i=0; i<SIZE; i++) buffer[i] *= 2;
-	  MPI_Send(&buffer, length_of_message, MPI_CHAR, 0, 2*iter+1, MPI_COMM_WORLD);
+	  MPI_Recv(buffer, length_of_message, MPI_CHAR, 0, 0, MPI_COMM_WORLD, &status);
+	  MPI_Send(buffer, length_of_message, MPI_CHAR, 0, 1, MPI_COMM_WORLD);
 	}	  
       }
 	// **************
@@ -87,13 +84,12 @@ int main(int argc, char *argv[])
 
             transfer_time = time / (2 * NMESSAGES);
 
-            sprintf(output_str, "%i %f %f\n",
-                    length_of_message,
-                    transfer_time,
-                    (length_of_message / transfer_time)/(1024*1024));
-
-            fwrite(output_str, sizeof(char), strlen(output_str), f);
-            printf("%s", output_str);
+	    f<<length_of_message<<"\t"
+	     <<transfer_time<<"\t"
+	     <<(length_of_message / transfer_time)/(1024*1024)
+	     <<std::endl;
+         
+	    //           printf("%s", output_str);
 
         }
         if (length_of_message >= REFINE_SIZE_MIN && length_of_message < REFINE_SIZE_MAX) {
@@ -105,7 +101,7 @@ int main(int argc, char *argv[])
     }
 
     if (my_rank == 0) {
-        fclose(f);
+      f.close();
     }
     MPI_Finalize();
     delete[] buffer;

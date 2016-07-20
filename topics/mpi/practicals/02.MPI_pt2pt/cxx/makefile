@@ -1,5 +1,5 @@
 CC=CC
-CFLAGS=-O3
+CFLAGS=-g
 EXT=c
 #SUBFIX=_solution
 
