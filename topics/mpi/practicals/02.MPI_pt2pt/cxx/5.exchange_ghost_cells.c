@@ -53,6 +53,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
 #include <mpi.h>
 
 #define SUBDOMAIN 10
@@ -79,9 +80,9 @@ int main(int argc, char *argv[])
         data[i]=rank;
     }
 
-    rank_bottom=/* find the rank of the top neighbor */
-    rank_top=/* find the rank of the bottom neighbor */
-
+    rank_bottom=(rank+4)%16;/* find the rank of the top neighbor */
+    rank_top=(rank+4+16)%16;/* find the rank of the bottom neighbor */
+    double* bottom_data = &data[SUBDOMAIN*(SUBDOMAIN-1)];
 
     //  ghost cell exchange with the neighbouring cells to the bottom and to the top using:
     //  a) MPI_Send, MPI_Irecv, MPI_Wait
@@ -95,6 +96,12 @@ int main(int argc, char *argv[])
     // b)
 
     // c)
+   
+    MPI_Sendrecv(&data[0],SUBDOMAIN,MPI_DOUBLE,
+		 rank_top,0,
+		 bottom_data,SUBDOMAIN,MPI_DOUBLE,
+		 rank_top,0,
+		 MPI_COMM_WORLD,&status);
 
     //  to the bottom
     // a)
@@ -102,6 +109,11 @@ int main(int argc, char *argv[])
     // b)
 
     // c)
+    MPI_Sendrecv(bottom_data,SUBDOMAIN,MPI_DOUBLE,
+		 rank_bottom,0,
+		 &data[0],SUBDOMAIN,MPI_DOUBLE,
+		 rank_bottom,0,
+		 MPI_COMM_WORLD,&status);
 
     if (rank==9) {
         printf("data of rank 9 after communication\n");
