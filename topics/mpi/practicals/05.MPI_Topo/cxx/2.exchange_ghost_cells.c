@@ -105,13 +105,23 @@ int main(int argc, char *argv[])
   MPI_Sendrecv(data_bottom,    SUBDOMAIN, MPI_DOUBLE, rank_bottom, 0,
                ghost_top, SUBDOMAIN, MPI_DOUBLE, rank_top, 0, comm_cart, &status);
 
-  //  to the left
-// TODO
+  double* data_left = data + 1 + DOMAINSIZE;
+  double* ghost_left = data + DOMAINSIZE;
+  double* data_right = data  + 2*DOMAINSIZE - 2;
+  double* ghost_right = data + 2*DOMAINSIZE - 1;
+
+ ///  to the left
+  MPI_Sendrecv(data_left,   1, ColumnType, rank_left, 0,
+               ghost_right, 1, ColumnType, rank_right, 0, comm_cart, &status);
   //  to the right
-// TODO
+  MPI_Sendrecv(data_right, 1, ColumnType, rank_right, 0,
+               ghost_left, 1, ColumnType, rank_left, 0, comm_cart, &status);
+
 
   if (rank==9) {
     printf("data of rank 9 after communication\n");
+    std::cout<<"top: "<<rank_top<<" bottom "<<rank_bottom<<std::endl;
+    std::cout<<"left: "<<rank_left<<" right "<<rank_right<<std::endl;
     for (j=0; j<DOMAINSIZE; j++) {
       for (i=0; i<DOMAINSIZE; i++) {
         std::cout<< data[i+j*DOMAINSIZE]<<" ";
