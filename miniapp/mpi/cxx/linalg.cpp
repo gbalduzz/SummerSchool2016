@@ -103,9 +103,10 @@ void ss_axpy(Field& y, const double alpha, Field const& x)
 {
     int N = y.length();
 
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++)
-        y[i] += alpha * x[i];
+#pragma ivdep
+#pragma omp parallel for
+  for (int i = 0; i < N; i++)
+    y[i] += alpha * x[i];
 }
 
 // computes y = x + alpha*(l-r)
@@ -115,7 +116,7 @@ void ss_add_scaled_diff(Field& y, Field const& x, const double alpha,
     Field const& l, Field const& r)
 {
     int N = y.length();
-
+#pragma ivdep
     #pragma omp parallel for
     for (int i = 0; i < N; i++)
         y[i] = x[i] + alpha * (l[i] - r[i]);
@@ -128,10 +129,10 @@ void ss_scaled_diff(Field& y, const double alpha,
     Field const& l, Field const& r)
 {
     int N = y.length();
-
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++)
-        y[i] = alpha * (l[i] - r[i]);
+#pragma ivdep
+#pragma omp parallel for
+  for (int i = 0; i < N; i++)
+    y[i] = alpha * (l[i] - r[i]);
 }
 
 // computes y := alpha*x
@@ -140,10 +141,10 @@ void ss_scaled_diff(Field& y, const double alpha,
 void ss_scale(Field& y, const double alpha, Field& x)
 {
     int N = y.length();
-
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++)
-        y[i] = alpha * x[i];
+#pragma ivdep
+#pragma omp parallel for
+  for (int i = 0; i < N; i++)
+    y[i] = alpha * x[i];
 }
 
 // computes linear combination of two vectors y := alpha*x + beta*z
@@ -153,10 +154,10 @@ void ss_lcomb(Field& y, const double alpha, Field& x, const double beta,
     Field const& z)
 {
     int N = y.length();
-
-    #pragma omp parallel for
-    for (int i = 0; i < N; i++)
-        y[i] = alpha * x[i] + beta * z[i];
+#pragma ivdep
+#pragma omp parallel for
+  for (int i = 0; i < N; i++)
+    y[i] = alpha * x[i] + beta * z[i];
 }
 
 // copy one vector into another y := x
