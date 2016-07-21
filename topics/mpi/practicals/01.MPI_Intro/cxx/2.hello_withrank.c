@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 #include <mpi.h>
-
+q
 
 int main(int argc, char *argv[])
 {

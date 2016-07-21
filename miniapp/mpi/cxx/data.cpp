@@ -32,42 +32,55 @@ SubDomain      domain;
 
 void SubDomain::init(int mpi_rank, int mpi_size, Discretization& discretization)
 {
-    // determine the number of subdomains in the x and y dimensions
-    int dims[2] = { 0, 0 };
+  // determine the number of subdomains in the x and y dimensions
+  int dims[]={0,0};
+  //dims[0] = std::sqrt(mpi_size*discretization.nx/discretization.ny);
+  //dims[1] = std::sqrt(mpi_size*discretization.ny/discretization.nx);
+  MPI_Dims_create(mpi_size, 2, dims);
 
-    ndomy = dims[0];
-    ndomx = dims[1];
+  ndomy = dims[0];
+  ndomx = dims[1];
 
-    // create a 2D non-periodic cartesian topology
-    int periods[2] = { 0, 0 };
+  // create a 2D non-periodic cartesian topology
+  int periods[2] = { 0, 0 };
 
-    // retrieve coordinates of the rank in the topology
-    int coords[2];
+  MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &comm_cart);
+  MPI_Comm_rank(comm_cart, &mpi_rank);
 
-    domy = coords[0]+1;
-    domx = coords[1]+1;
+  // retrieve coordinates of the rank in the topology
+  int coords[2];
+  MPI_Cart_coords(comm_cart, mpi_rank, 2, coords);
 
-    // set neighbours for all directions
-    // i.e. set neighbour_south neighbour_north neighbour_east neighbour_west
+  domy = coords[0]+1;
+  domx = coords[1]+1;
 
-    // get bounding box
-    nx = discretization.nx / ndomx;
-    ny = discretization.ny / ndomy;
-    // TODO: the startx and endx values might have to be adjusted by 1
-    startx = (domx-1)*nx+1;
-    starty = (domy-1)*ny+1;
+  // set neighbours for all directions
+  // i.e. set neighbour_south neighbour_north neighbour_east neighbour_west
+  MPI_Cart_shift(comm_cart, 0, 1, &neighbour_west, &neighbour_east);
+  MPI_Cart_shift(comm_cart, 1, 1, &neighbour_north, &neighbour_south);
 
-    // adjust for grid dimensions that do not divided evenly between the
-    // sub-domains
-    if( domx == ndomx )
-        nx = discretization.nx - startx + 1;
-    if( domy == ndomy )
-        ny = discretization.ny - starty + 1;
+  // get bounding box
+  nx = discretization.nx / ndomx;
+  ny = discretization.ny / ndomy;
+  // TODO: the startx and endx values might have to be adjusted by 1
+  startx = (domx-1)*nx+1;
+  starty = (domy-1)*ny+1;
 
-    endx = startx + nx -1;
-    endy = starty + ny -1;
+  // adjust for grid dimensions that do not divided evenly between the
+  // sub-domains
+  if( domx == ndomx )
+    nx = discretization.nx - startx + 1;
+  if( domy == ndomy )
+    ny = discretization.ny - starty + 1;
 
-    // get total number of grid points in this sub-domain
+  endx = startx + nx -1;
+  endy = starty + ny -1;
+
+  //create type for rows (Field is column major)
+  MPI_Type_vector(nx-2, 1, /*stride*/ny, MPI_DOUBLE, &RowType);
+  MPI_Type_commit(&RowType);
+
+  // get total number of grid points in this sub-domain
     N = nx*ny;
 
     rank = mpi_rank;

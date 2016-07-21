@@ -20,31 +20,63 @@ namespace operators {
 
 void diffusion(const data::Field &U, data::Field &S)
 {
-    using data::options;
-    using data::domain;
+  using data::options;
+  using data::domain;
 
-    using data::bndE;
-    using data::bndW;
-    using data::bndN;
-    using data::bndS;
+  using data::bndE;
+  using data::bndW;
+  using data::bndN;
+  using data::bndS;
 
     using data::buffE;
-    using data::buffW;
-    using data::buffN;
-    using data::buffS;
+  using data::buffW;
+  using data::buffN;
+  using data::buffS;
 
-    using data::x_old;
+  using data::x_old;
 
     double dxs = 1000. * (options.dx * options.dx);
-    double alpha = options.alpha;
-    int nx = domain.nx;
-    int ny = domain.ny;
-    int iend  = nx - 1;
-    int jend  = ny - 1;
+  double alpha = options.alpha;
+  int nx = domain.nx;
+  int ny = domain.ny;
+  int iend  = nx - 1;
+  int jend  = ny - 1;
 
-    if(domain.neighbour_north>=0) {
-        // ...
-    }
+  MPI_Request request[8];
+  MPI_Status status[8];
+  int n_request=0;
+
+  /**/if(domain.rank == 0) std::cout<<"Making requests: \n";
+
+  if(domain.neighbour_north>=0) {
+    for(int j=0; j<nx;j++) buffN[j] = U(0,j);
+    MPI_Isend(buffN.data(), nx, MPI_DOUBLE, domain.neighbour_north, 0, domain.comm_cart, request+n_request);
+    n_request++;
+    MPI_Irecv(bndN.data(),  nx, MPI_DOUBLE, domain.neighbour_north, 0, domain.comm_cart, request+n_request);
+    n_request++;
+  }
+  if(domain.neighbour_south>=0) {
+    for(int j=0; j<nx;j++) buffS[j] = U(ny-1,j);
+    MPI_Isend(buffS.data(), nx, MPI_DOUBLE, domain.neighbour_south, 0, domain.comm_cart, request+n_request);
+    n_request++;
+    MPI_Irecv(bndS.data(),  nx, MPI_DOUBLE, domain.neighbour_south, 0, domain.comm_cart, request+n_request);
+    n_request++;
+  }
+  if(domain.neighbour_west>=0) {
+    for(int i=0; i<nx;i++) buffW[i] = U(i,ny-1);
+    MPI_Isend(buffW.data(), ny, MPI_DOUBLE, domain.neighbour_west, 0, domain.comm_cart, request+n_request);
+    n_request++;
+    MPI_Irecv(bndW.data(),  ny, MPI_DOUBLE, domain.neighbour_west, 0, domain.comm_cart, request+n_request);
+    n_request++;
+  }
+  if(domain.neighbour_east>=0) {
+    for(int i=0; i<nx;i++) buffW[i] = U(i,0);
+    MPI_Isend(buffE.data(), ny, MPI_DOUBLE, domain.neighbour_east, 0, domain.comm_cart, request+n_request);
+    n_request++;
+    MPI_Irecv(bndE.data(),  ny, MPI_DOUBLE, domain.neighbour_east, 0, domain.comm_cart, request+n_request);
+    n_request++;
+  }
+
 
     // the interior grid points
     #pragma omp parallel for
@@ -58,6 +90,9 @@ void diffusion(const data::Field &U, data::Field &S)
         }
     }
 
+  /**/ if(domain.rank == 0) std::cout<<"Made requests: \n";
+  MPI_Waitall(n_request, request, status);
+/**/ if(domain.rank == 0) std::cout<<"Completed requests: \n";
     // the east boundary
     {
         int i = nx - 1;

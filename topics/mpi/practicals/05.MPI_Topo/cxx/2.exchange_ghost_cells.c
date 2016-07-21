@@ -82,41 +82,54 @@ int main(int argc, char *argv[])
   MPI_Comm_rank(comm_cart, &rank);
   MPI_Cart_shift(comm_cart, 0, 1, &rank_left, &rank_right);
   MPI_Cart_shift(comm_cart, 1, 1, &rank_top,  &rank_bottom);
-
-
   for (i=0; i<DOMAINSIZE*DOMAINSIZE; i++) {
     data[i]=rank;
   }
+  double bndE[SUBDOMAIN];
+  double bndW[SUBDOMAIN];
+  double bndN[SUBDOMAIN];
+  double bndS[SUBDOMAIN];
+  double buffE[SUBDOMAIN];
+  double buffW[SUBDOMAIN];
+  double buffN[SUBDOMAIN];
+  double buffS[SUBDOMAIN];
   //  derived datatype, create a datatype for sending the column
-  MPI_Datatype ColumnType;
-  MPI_Type_vector(SUBDOMAIN, 1, DOMAINSIZE, MPI_DOUBLE, &ColumnType);
-  MPI_Type_commit(&ColumnType);
+  //MPI_Datatype ColumnType;
+  //MPI_Type_vector(SUBDOMAIN, 1, DOMAINSIZE, MPI_DOUBLE, &ColumnType);
+  //MPI_Type_commit(&ColumnType);
+  for(int i=0; i<SUBDOMAIN; i++){
+    buffN[i] = data[i+DOMAINSIZE+1];
+    buffS[i] = data[i+ DOMAINSIZE*(DOMAINSIZE-1)+1];
+    buffE[i] = data[i*DOMAINSIZE+ 2*DOMAINSIZE-2];
+    buffW[i] = data[i*DOMAINSIZE+ DOMAINSIZE+1];
 
-  double* data_top =    data + (1+DOMAINSIZE);
-  double* data_bottom = data + (1+DOMAINSIZE*(DOMAINSIZE-2));
-  double* ghost_top = data + 1;
-  double* ghost_bottom = data + (1+DOMAINSIZE*(DOMAINSIZE-1));
+    bndW[i] = rank;bndN[i] = rank;bndS[i] = rank;bndE[i] = rank;
+  }
   //  ghost cell exchange with the neighbouring cells in all directions
   //  to the top
-  MPI_Sendrecv(data_top,    SUBDOMAIN, MPI_DOUBLE, rank_top, 0,
-               ghost_bottom, SUBDOMAIN, MPI_DOUBLE, rank_bottom, 0, comm_cart, &status);
+  MPI_Request rq;
+  MPI_Isendrecv(buffN,    SUBDOMAIN, MPI_DOUBLE, rank_top, 0,
+               bndN, SUBDOMAIN, MPI_DOUBLE, rank_top, 0, comm_cart, &rq);
 
   //  to the bottom
-  MPI_Sendrecv(data_bottom,    SUBDOMAIN, MPI_DOUBLE, rank_bottom, 0,
-               ghost_top, SUBDOMAIN, MPI_DOUBLE, rank_top, 0, comm_cart, &status);
+  MPI_Sendrecv(buffS,    SUBDOMAIN, MPI_DOUBLE, rank_bottom, 0,
+               bndS, SUBDOMAIN, MPI_DOUBLE, rank_bottom, 0, comm_cart, &status);
 
-  double* data_left = data + 1 + DOMAINSIZE;
-  double* ghost_left = data + DOMAINSIZE;
-  double* data_right = data  + 2*DOMAINSIZE - 2;
-  double* ghost_right = data + 2*DOMAINSIZE - 1;
-
+  MPI_Wait(&rq,&status);
+/*
  ///  to the left
-  MPI_Sendrecv(data_left,   1, ColumnType, rank_left, 0,
-               ghost_right, 1, ColumnType, rank_right, 0, comm_cart, &status);
+  MPI_Sendrecv(buffW,   1, MPI_DOUBLE, rank_left, 0,
+               bndW, 1, MPI_DOUBLE, rank_right, 0, comm_cart, &status);
   //  to the right
-  MPI_Sendrecv(data_right, 1, ColumnType, rank_right, 0,
-               ghost_left, 1, ColumnType, rank_left, 0, comm_cart, &status);
-
+  MPI_Sendrecv(buffE, 1, MPI_DOUBLE, rank_right, 0,
+               bndE, 1, MPI_DOUBLE, rank_left, 0, comm_cart, &status);
+*/
+  for(int i=0; i<SUBDOMAIN; i++){
+    data[i+ 1] = bndN[i];
+    data[i+ DOMAINSIZE*(DOMAINSIZE-1)] = bndS[i];
+    data[i*DOMAINSIZE+ 2*DOMAINSIZE-1] = bndE[i];
+    data[i*DOMAINSIZE +DOMAINSIZE] = bndW[i];
+  }
 
   if (rank==9) {
     printf("data of rank 9 after communication\n");
@@ -130,7 +143,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  MPI_Type_free(&ColumnType);
+ // MPI_Type_free(&ColumnType);
   MPI_Comm_free(&comm_cart);
   MPI_Finalize();
 

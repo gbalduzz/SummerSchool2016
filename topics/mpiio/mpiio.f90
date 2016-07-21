@@ -11,7 +11,7 @@ real*8 times(10)
 integer fh
 integer(KIND=MPI_OFFSET_KIND)offset
 
-!switch on MPI   
+!switch on MPI
 call MPI_INIT(ierror)
 
 !get MPI rank and number of processes
@@ -43,7 +43,6 @@ times(2) = MPI_Wtime()
 if(rank == 0)write(*,*)"Time for I/O - WRITE AT(sec) = ", times(2) - times(1)
 
 ! 2. SIMPLE VIEW
-
 call MPI_barrier(MPI_COMM_WORLD,ierror)
 times(1) = MPI_Wtime()
 offset = rank*4*nsize
