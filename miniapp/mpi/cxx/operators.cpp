@@ -46,8 +46,6 @@ void diffusion(const data::Field &U, data::Field &S)
   MPI_Status status[8];
   int n_request=0;
 
-  /**/if(domain.rank == 0) std::cout<<"Making requests: \n";
-
   if(domain.neighbour_north>=0) {
     for(int j=0; j<nx;j++) buffN[j] = U(0,j);
     MPI_Isend(buffN.data(), nx, MPI_DOUBLE, domain.neighbour_north, 0, domain.comm_cart, request+n_request);
@@ -77,7 +75,6 @@ void diffusion(const data::Field &U, data::Field &S)
     n_request++;
   }
 
-
     // the interior grid points
     #pragma omp parallel for
     for (int j=1; j < jend; j++) {
@@ -90,9 +87,7 @@ void diffusion(const data::Field &U, data::Field &S)
         }
     }
 
-  /**/ if(domain.rank == 0) std::cout<<"Made requests: \n";
   MPI_Waitall(n_request, request, status);
-/**/ if(domain.rank == 0) std::cout<<"Completed requests: \n";
     // the east boundary
     {
         int i = nx - 1;
