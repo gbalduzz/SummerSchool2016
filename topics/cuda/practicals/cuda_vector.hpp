@@ -1,7 +1,6 @@
 #pragma once
 #include <cuda.h>
 #include <vector>
-#include <iostream>
 #include <stdexcept>
 #include <assert.h>
 
@@ -16,7 +15,7 @@ public:
   void copyTo(T* v);
   void copyTo(std::vector<T>& v);
   void copyFrom(T* v);
-  void copyFrom(const std::vecFromr<T>& v);
+  void copyFrom(const std::vector<T>& v);
 private:
   T* data;
   int size;
@@ -25,15 +24,14 @@ private:
 template <typename T>
 cudaVector<T>::cudaVector(const int n){
   size = n;
-  cudaError err = cudaMalloc(&data, size * sizeof(T));
+  cudaError_t status = cudaMalloc(&data, size * sizeof(T));
   if(status != cudaSuccess){
-    throw(std::logic_error("CUDA ERROR: "+
-                           cudaGetErrorString(status)));
-  }
+     throw(std::runtime_error("ERROR: cuda could not allocate memory"));
+}
 }
 
 template <typename T>
-cudaVector<T>::cudaVector(const T* v, int s):
+cudaVector<T>::cudaVector(const T* v, int n):
 cudaVector(n)
 {
    cudaMemcpy (data, v, size * sizeof(T), cudaMemcpyHostToDevice);

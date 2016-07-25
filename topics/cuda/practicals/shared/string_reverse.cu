@@ -6,6 +6,15 @@
 
 // TODO : implement a kernel that reverses a string of length n in place
 // void reverse_string(char* str, int n)
+__global__
+void reverse_string(char* str, int n){
+  //  warnong: run with a single block 
+ extern __shared__ char buffer[];
+ const int i =threadIdx.x;
+ buffer[i] = str[n-1-i];
+ __syncthreads();
+ str[i] = buffer[i];
+}
 
 int main(int argc, char** argv) {
     // check that the user has passed a string to reverse
@@ -27,7 +36,7 @@ int main(int argc, char** argv) {
     copy_to_device<char>(string, string_d, n);
 
     // TODO : call the string reverse function
-
+    reverse_string<<<1,n,n>>>(string_d, n);
     // copy reversed string back to host and print
     copy_to_host<char>(string_d, string, n);
     std::cout << "reversed string:\n" << string << std::endl;

@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 
     start = get_time();
     // TODO launch kernel (alpha=2.0)
-    const int block_size =1024;
+    const int block_size =256;
     const int n_blocks = (n+block_size-1) / block_size;
     axpy<<<n_blocks,block_size>>>(n,2.,x_device, y_device);
 

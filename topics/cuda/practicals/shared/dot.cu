@@ -17,6 +17,8 @@ double dot_host(const double *x, const double* y, int n) {
 // hint : the result should be a single value in result[0]
 __global__
 void dot_gpu_kernel(const double *x, const double* y, double *result, int n) {
+  const int i = threadIdx.x;
+  extern __shared__ 
 }
 
 double dot_gpu(const double *x, const double* y, int n) {
