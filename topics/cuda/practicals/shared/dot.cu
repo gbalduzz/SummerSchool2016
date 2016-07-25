@@ -21,11 +21,11 @@ void dot_gpu_kernel(const double *x, const double* y, double *result, int n) {
   extern __shared__ double buffer[];
   buffer[i] = x[i] * y[i];
   __syncthreads();
-  for(int size = n/2; size>1; size/=2){
+  for(int size = n/2; size>=1; size/=2){
     if(i < size) buffer[i] += buffer[i+size];
     __syncthreads();
   }
-  result = buffer[0];
+  *result = buffer[0];
 }
 
 double dot_gpu(const double *x, const double* y, int n) {
