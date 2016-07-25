@@ -15,11 +15,24 @@ double dot_host(const double *x, const double* y, int n) {
 
 // TODO implement dot product kernel
 // hint : the result should be a single value in result[0]
+__device__ __host__
+int next_pow2(int n){
+  //get smallest power of 2 >= n
+  unsigned short int n_shifts(0);
+  n--;
+  while(n >> n_shifts) n_shifts++;
+  return 1 << (n_shifts);
+
+}
+
 __global__
 void dot_gpu_kernel(const double *x, const double* y, double *result, int n) {
   const int i = threadIdx.x;
   extern __shared__ double buffer[];
-  buffer[i] = x[i] * y[i];
+  if(i < n) buffer[i] = x[i] * y[i];
+  else buffer[i] = 0;
+  //get smallest power of 2 >= n
+  n = next_pow2(n);
   __syncthreads();
   for(int size = n/2; size>=1; size/=2){
     if(i < size) buffer[i] += buffer[i+size];
@@ -31,7 +44,7 @@ void dot_gpu_kernel(const double *x, const double* y, double *result, int n) {
 double dot_gpu(const double *x, const double* y, int n) {
     static double* result = malloc_device<double>(1);
     // TODO call dot product kernel
-  dot_gpu_kernel<<<1, n, n*sizeof(double)>>>(x, y, result,n);
+    dot_gpu_kernel<<<1, n, next_pow2(n)*sizeof(double)>>>(x, y, result,n);
   double r;
   copy_to_host<double>(result, &r, 1);
   return r;
@@ -39,7 +52,7 @@ double dot_gpu(const double *x, const double* y, int n) {
 
 int main(int argc, char** argv) {
     size_t pow = read_arg(argc, argv, 1, 4);
-    size_t n = (1 << pow);
+    size_t n = std::atoi(argv[1]);//(1 << pow);
 
     auto size_in_bytes = n * sizeof(double);
 
