@@ -8,6 +8,12 @@
 // TODO CUDA kernel implementing axpy
 //      y = y + alpha*x
 //void axpy(int n, double alpha, const double* x, double* y)
+template<typename T>
+__global__
+void axpy(const int n, const T alpha, const T x[], T y[]){
+  const int i = threadIdx.x;
+  y[i] += alpha*x[i];
+}
 
 template <typename F>
 int calculate_threads_per_block(F kernel, int  n) {
@@ -51,6 +57,7 @@ int main(int argc, char** argv) {
 
     start = get_time();
     // TODO launch kernel (alpha=2.0)
+    axpy<<<1,n>>>(n,2.,x_device, y_device);
 
     cudaThreadSynchronize();
     auto time_axpy = get_time() - start;
