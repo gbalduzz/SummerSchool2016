@@ -11,8 +11,9 @@
 template<typename T>
 __global__
 void axpy(const int n, const T alpha, const T x[], T y[]){
-  const int i = threadIdx.x;
-  y[i] += alpha*x[i];
+  const int i = blockIdx.x*blockDim.x+threadIdx.x;
+  if(i < n)
+    y[i] += alpha*x[i];
 }
 
 template <typename F>
@@ -57,7 +58,9 @@ int main(int argc, char** argv) {
 
     start = get_time();
     // TODO launch kernel (alpha=2.0)
-    axpy<<<1,n>>>(n,2.,x_device, y_device);
+    const int block_size =1024;
+    const int n_blocks = (n+block_size-1) / block_size;
+    axpy<<<n_blocks,block_size>>>(n,2.,x_device, y_device);
 
     cudaThreadSynchronize();
     auto time_axpy = get_time() - start;
