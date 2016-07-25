@@ -7,28 +7,36 @@
 
 template <typename T>
 class cudaVector{
-public: 
+public:
+  cudaVector(const int n);
   cudaVector(const std::vector<T>& v);
   cudaVector(const T* v, int s);
   ~cudaVector();
   operator T*(){return data;}
   void copyTo(T* v);
   void copyTo(std::vector<T>& v);
+  void copyFrom(T* v);
+  void copyFrom(const std::vecFromr<T>& v);
 private:
   T* data;
   int size;
-  int byte_size;
 };
 
 template <typename T>
-cudaVector<T>::cudaVector(const T* v, int s){
-  size = s;
-  byte_size = s * sizeof(T);
-  cudaError err = cudaMalloc(&data, byte_size);
-  if(err != cudaSuccess){
-    throw(std::logic_error("ERROR: Allocation on device failed.\n"));
+cudaVector<T>::cudaVector(const int n){
+  size = n;
+  cudaError err = cudaMalloc(&data, size * sizeof(T));
+  if(status != cudaSuccess){
+    throw(std::logic_error("CUDA ERROR: "+
+                           cudaGetErrorString(status)));
   }
-  cudaMemcpy (data, v, byte_size, cudaMemcpyHostToDevice);
+}
+
+template <typename T>
+cudaVector<T>::cudaVector(const T* v, int s):
+cudaVector(n)
+{
+   cudaMemcpy (data, v, size * sizeof(T), cudaMemcpyHostToDevice);
 }
 
 template <typename T>
@@ -43,11 +51,22 @@ cudaVector<T>::~cudaVector(){
 
 template <typename T>
 void cudaVector<T>::copyTo(T* v){
-  cudaMemcpy (v, data, byte_size, cudaMemcpyDeviceToHost);
+  cudaMemcpy (v, data, size * sizeof(T), cudaMemcpyDeviceToHost);
 }
 
 template <typename T>
 void cudaVector<T>::copyTo(std::vector<T>& v){
   assert(v.size() == size);
-  cudaMemcpy(&v[0], data, byte_size, cudaMemcpyDeviceToHost);
+  cudaMemcpy(&v[0], data, size * sizeof(T), cudaMemcpyDeviceToHost);
+}
+
+template <typename T>
+void cudaVector<T>::copyFrom(T* v){
+  cudaMemcpy (data, v,size * sizeof(T), cudaMemcpyHostToDevice);
+}
+
+template <typename T>
+void cudaVector<T>::copyFrom(const std::vector<T>& v){
+  assert(v.size() == size);
+  cudaMemcpy (data, v.data(), size * sizeof(T), cudaMemcpyHostToDevice);
 }
