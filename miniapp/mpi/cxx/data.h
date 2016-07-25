@@ -24,7 +24,7 @@ struct SubDomain
   // initialize a subdomain
   void init(int, int, Discretization&);
 //destructor
-  ~SubDomain(){ MPI_Comm_free(&RowType);}
+  //~SubDomain(){ MPI_Comm_free(&RowType);}
   // print subdomain information
   void print();
 
@@ -50,7 +50,7 @@ struct SubDomain
 
   //MPI communicator
   MPI_Comm comm_cart;
-  MPI_Datatype RowType;
+  //MPI_Datatype RowType;
 
   // mpi info
   int size;

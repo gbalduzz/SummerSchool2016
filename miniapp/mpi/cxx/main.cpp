@@ -27,6 +27,7 @@
 #include "linalg.h"
 #include "operators.h"
 #include "stats.h"
+#include <unistd.h>
 
 using namespace data;
 using namespace linalg;
@@ -144,6 +145,14 @@ int main(int argc, char* argv[])
   MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+
+#ifdef DEBUG
+  //wait for debugger
+  bool debug_wait = 1;
+  if (mpi_rank == 0) std::cout<<"Waiting for a debugger.\n";
+  usleep(60e6);
+  if (mpi_rank == 0) std::cout<<"Resuming\n";
+#endif
 
   // initialize subdomain
   domain.init(mpi_rank, mpi_size, options);

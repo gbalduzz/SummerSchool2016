@@ -77,8 +77,8 @@ void SubDomain::init(int mpi_rank, int mpi_size, Discretization& discretization)
   endy = starty + ny -1;
 
   //create type for rows (Field is column major)
-  MPI_Type_vector(nx-2, 1, /*stride*/ny, MPI_DOUBLE, &RowType);
-  MPI_Type_commit(&RowType);
+  //MPI_Type_vector(nx-2, 1, /*stride*/ny, MPI_DOUBLE, &RowType);
+  //MPI_Type_commit(&RowType);
 
   // get total number of grid points in this sub-domain
     N = nx*ny;
