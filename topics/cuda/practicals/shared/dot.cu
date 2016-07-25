@@ -18,15 +18,23 @@ double dot_host(const double *x, const double* y, int n) {
 __global__
 void dot_gpu_kernel(const double *x, const double* y, double *result, int n) {
   const int i = threadIdx.x;
-  extern __shared__ 
+  extern __shared__ double buffer[];
+  buffer[i] = x[i] * y[i];
+  __syncthreads();
+  for(int size = n/2; size>1; size/=2){
+    if(i < size) buffer[i] += buffer[i+size];
+    __syncthreads();
+  }
+  result = buffer[0];
 }
 
 double dot_gpu(const double *x, const double* y, int n) {
     static double* result = malloc_device<double>(1);
     // TODO call dot product kernel
-    double r;
-    copy_to_host<double>(result, &r, 1);
-    return r;
+  dot_gpu_kernel<<<1, n, n*sizeof(double)>>>(x, y, result,n);
+  double r;
+  copy_to_host<double>(result, &r, 1);
+  return r;
 }
 
 int main(int argc, char** argv) {
