@@ -57,6 +57,16 @@ namespace kernels {
     {
         // TODO : implement the interior stencil
         // EXTRA : can you make it use shared memory?
+      const int i = blockDim.x*blockIdx.x +threadIdx.x +1;
+      const int j = blockDim.y*blockIdx.y +threadIdx.y +1;
+      auto lindex=[&](int a, int b){return a+params.nx*b;}; 
+      const int pos = lindex(i,j);
+      if(i < params.nx-1 and j < params.ny -1)
+	S[pos] = -(4. + params.alpha) * U[pos] +
+	  U[pos-1] + U[pos+1] +
+	  U[pos+params.nx] + U[pos-params.nx] +
+	  params.alpha * params.x_old[pos] + 
+	  params.dxs * U[pos] * (1. - U[pos]);
     }
 
     __global__
@@ -82,7 +92,12 @@ namespace kernels {
 
             // TODO : do the stencil on the WEST side
             // WEST : i = 0
-        }
+	    pos = find_pos(0, j);
+	    S[pos] = -(4. + alpha) * U[pos]
+                        + U[pos-1] + U[pos-nx] + U[pos+nx]
+                        + alpha*params.x_old[pos] + params.bndW[j]
+	      + dxs * U[pos] * (1.0 - U[pos]);
+	}
     }
 
     __global__
@@ -104,6 +119,11 @@ namespace kernels {
 
             // TODO : do the stencil on the SOUTH side
             // SOUTH : j = 0
+	    pos = i;
+            S[pos] = -(4. + alpha) * U[pos]
+                        + U[pos-1] + U[pos+1] + U[pos-nx]
+                        + alpha*params.x_old[pos] + params.bndS[i]
+	      + dxs * U[pos] * (1.0 - U[pos]);
         }
     }
 
@@ -185,8 +205,14 @@ void diffusion(data::Field const& U, data::Field &S)
     };
 
     // TODO: apply stencil to the interior grid points
-    cuda_check_last_kernel("interior point stencil kernel launch");
 
+    cuda_check_last_kernel("interior point stencil kernel launch");
+    const int threads = 32;
+    const dim3 threads_grid(threads,threads);
+    const dim3 blocks_grid(calculate_grid_dim(nx-2, threads),
+			   calculate_grid_dim(ny-2, threads));
+    kernels::stencil_interior
+      <<<blocks_grid, threads_grid>>>(S.device_data(), U.device_data());
     // apply stencil at east-west boundary
     auto bnd_grid_dim_y = calculate_grid_dim(ny, 64);
     kernels::stencil_east_west<<<bnd_grid_dim_y, 64>>>(S.device_data(), U.device_data());
