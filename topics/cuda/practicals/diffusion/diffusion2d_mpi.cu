@@ -26,7 +26,21 @@ void fill_gpu(T *v, T value, int n);
 __global__
 void diffusion(double *x0, double *x1, int nx, int ny, double dt) {
     // TODO : copy stencil implemented in diffusion2d.cu
+  const int i = blockDim.x * blockIdx.x +threadIdx.x +1;
+  const int j = blockDim.y * blockIdx.y +threadIdx.y +1;
+#define LINDEX(i,j) (i)+(j)*nx
+  if(i < nx-1 && j < ny-1)
+    x1[LINDEX(i,j)] =  x0[LINDEX(i,j)] +
+      dt * (-4.*x0[LINDEX(i,j)] +
+	    x0[LINDEX(i,j-1)] + x0[LINDEX(i,j+1)] +
+	    x0[LINDEX(i-1,j)] + x0[LINDEX(i+1,j)]);
+#undef LINDEX
 }
+
+inline int gridSize(const int n,const  int block_dim){
+  return  (n+block_dim-1)/block_dim;
+}
+
 
 int main(int argc, char** argv) {
     // set up parameters
@@ -46,7 +60,11 @@ int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
-
+    const int rank_north = mpi_rank == mpi_size-1 ? 
+      -1 : mpi_rank+1;
+    const int rank_south = mpi_rank == 0 ?
+      -1 : mpi_rank-1;
+    MPI_Status status;
     // calculate global domain sizes
     if(ny%mpi_size) {
         std::cout << "error : global domain dimension " << ny
@@ -101,12 +119,23 @@ int main(int argc, char** argv) {
         // x0(:, 1)    -> south
         // x0(:, ny-1) <- north
         // x0(:, ny-2) -> north
+      if(rank_south >= 0)
+	MPI_Sendrecv(x0+nx, nx, MPI_DOUBLE, rank_south, 0,
+		     x0, nx, MPI_DOUBLE, rank_south, 0,
+		     MPI_COMM_WORLD, &status);
+      if(rank_north >= 0)
+	MPI_Sendrecv(x0+nx*(ny-2), nx, MPI_DOUBLE, rank_north, 0,
+                     x0+nx*(ny-1), nx, MPI_DOUBLE, rank_north, 0,
+                     MPI_COMM_WORLD, &status);
 
-        // TODO copy in the kernel launch from diffusion2d.cu
-
-        std::swap(x0, x1);
+      // TODO copy in the kernel launch from diffusion2d.cu
+      dim3 block(16,16);
+      dim3 grid(gridSize(nx-2,16), gridSize(ny-2,16));
+      diffusion<<<grid,block>>>(x0,x1,nx,ny,dt);
+      std::swap(x0, x1);
     }
     auto stop_event = stream.enqueue_event();
+
     stop_event.wait();
 
     copy_to_host<double>(x0, x_host, buffer_size);
