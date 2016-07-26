@@ -147,7 +147,15 @@ double ss_dot(Field const& x, Field const& y)
 double ss_norm2(Field const& x)
 {
   // INTERNAL is this optimal cublasDnrm2
-  return std::sqrt(ss_dot(x, x));
+  //return std::sqrt(ss_dot(x, x));
+  cublasHandle_t handle;
+  double result = 0.;
+  const int n = x.length();
+  cublasCreate(&handle);
+  cublasDnrm2(handle, n, x.device_data(), 1, &result);
+  cublasDestroy(handle);
+  return result;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

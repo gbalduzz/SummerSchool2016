@@ -57,6 +57,7 @@ namespace kernels {
     {
         // TODO : implement the interior stencil
         // EXTRA : can you make it use shared memory?
+      
       const int i = blockDim.x*blockIdx.x +threadIdx.x +1;
       const int j = blockDim.y*blockIdx.y +threadIdx.y +1;
       auto lindex=[&](int a, int b){return a+params.nx*b;}; 
@@ -94,7 +95,7 @@ namespace kernels {
             // WEST : i = 0
 	    pos = find_pos(0, j);
 	    S[pos] = -(4. + alpha) * U[pos]
-                        + U[pos-1] + U[pos-nx] + U[pos+nx]
+                        + U[pos+1] + U[pos-nx] + U[pos+nx]
                         + alpha*params.x_old[pos] + params.bndW[j]
 	      + dxs * U[pos] * (1.0 - U[pos]);
 	}
@@ -121,7 +122,7 @@ namespace kernels {
             // SOUTH : j = 0
 	    pos = i;
             S[pos] = -(4. + alpha) * U[pos]
-                        + U[pos-1] + U[pos+1] + U[pos-nx]
+                        + U[pos-1] + U[pos+1] + U[pos+nx]
                         + alpha*params.x_old[pos] + params.bndS[i]
 	      + dxs * U[pos] * (1.0 - U[pos]);
         }
