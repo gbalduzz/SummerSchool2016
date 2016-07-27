@@ -40,12 +40,12 @@ int main(int argc, char** argv) {
     double *x0     = malloc_device<double>(buffer_size);
     double *x1     = malloc_device<double>(buffer_size);
 #endif
-
     double start_diffusion, time_diffusion;
 
 #ifdef OPENACC_DATA
-    // TODO: Create/move necessary data to GPU
-#endif
+    // DONE?: Create/move necessary data to GPU
+#pragma acc enter data create(x0[0:buffer_size]) copyout(x1[0:buffer_size])
+  #endif
     {
         // set initial conditions of 0 everywhere
         fill_gpu(x0, 0., buffer_size);
@@ -58,8 +58,9 @@ int main(int argc, char** argv) {
         fill_gpu(x1+nx*(ny-1), 1., nx);
 
         // time stepping loop
-        // TODO: Wait for previous operations before starting the timer
-        start_diffusion = get_time();
+        // DONE: Wait for previous operations before starting the timer
+#pragma acc wait
+      start_diffusion = get_time();
         for(auto step=0; step<nsteps; ++step) {
             diffusion_gpu(x0, x1, nx-2, ny-2, dt);
 #ifdef OPENACC_DATA
@@ -68,9 +69,9 @@ int main(int argc, char** argv) {
             std::swap(x0, x1);
 #endif
         }
-
-        // TODO: Wait for previous operations before stoping the timer
-        time_diffusion = get_time() - start_diffusion;
+    // DONE: Wait for previous operations before stoping the timer
+#pragma acc wait
+    time_diffusion = get_time() - start_diffusion;
     } // end of acc data
 
 #ifdef OPENACC_DATA

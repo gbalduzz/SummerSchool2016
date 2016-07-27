@@ -10,6 +10,7 @@ void diffusion_gpu(const double *x0, double *x1, int nx, int ny, double dt)
 
 #ifdef OPENACC_DATA
     // TODO: Offload the following two loops on GPU
+#pragma acc parallel loop present(x1,x0) independent  collapse(2)
 #else
     // TODO: Offload the following two loops on GPU, x0 and x1 are allocated by
     // CUDA
@@ -31,6 +32,7 @@ void copy_gpu(T *dst, const T *src, int n)
 
 #ifdef OPENACC_DATA
     // TODO: Offload the copying on GPU
+#pragma omp parallel loop independent present(dst,src)
 #else
     // TODO: Offload the copying on GPU, dst and src are allocated by CUDA
 #endif
@@ -44,10 +46,11 @@ template <typename T>
 void fill_gpu(T *v, T value, int n)
 {
     int i;
-
+#pragma omp parallel loop independent present(v)
 #ifdef OPENACC_DATA
     // TODO: Fill data in GPU
-#else
+
+  #else
     // TODO: Fill data in GPU, v is allocated by CUDA
 #endif
     for (i = 0; i < n; ++i)
