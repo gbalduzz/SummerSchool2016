@@ -7,36 +7,36 @@
 #include "util.h"
 
 // TODO: This must be called from an OpenACC region
+#pragma acc routine seq
 double blur(int pos, const double *u)
 {
     return 0.25*(u[pos-1] + 2.0*u[pos] + u[pos+1]);
 }
 
-void blur_twice_gpu_naive(double* in , double* out , int n, int nsteps)
+void blur_twice_gpu(double* in , double* out , int n, int nsteps)
 {
-    double* buffer = malloc_host<double>(n);
-
+#pragma acc data copyin(in[0:n]) copyout(out[0:n])
+  {
     for (auto istep = 0; istep < nsteps; ++istep) {
         int i;
 
         // TODO: Offload the following loop to GPU
-        for(i=1; i<n-1; ++i) {
-            buffer[i] = blur(i, in);
+#pragma acc parallel loop independent present(in, out)
+	for(i=1; i<n-1; ++i) {
+            out[i] = blur(i, in);
         }
 
         // TODO: Offload the following loop to GPU
+#pragma acc parallel loop independent present(in, out)
         for(i=2; i<n-2; ++i) {
-            out[i] = blur(i, buffer);
+            in[i] = blur(i, out);
         }
-
-        // swap in/out
-        std::swap(in, out);
     }
-
-    free(buffer);
+    std::copy(in, in+n, out);
+  }
 }
 
-void blur_twice_gpu_nocopies(double *in , double *out , int n, int nsteps)
+/*void blur_twice_gpu_nocopies(double *in , double *out , int n, int nsteps)
 {
     double *buffer = malloc_host<double>(n);
 
@@ -58,7 +58,7 @@ void blur_twice_gpu_nocopies(double *in , double *out , int n, int nsteps)
     }
 
     free(buffer);
-}
+    }*/
 
 int main(int argc, char **argv) {
     size_t pow    = read_arg(argc, argv, 1, 20);
@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
 
     auto tstart = get_time();
     // TODO: Make sure to call the correct function
-    blur_twice_gpu_naive(x0, x1, n, nsteps);
+    blur_twice_gpu(x0, x1, n, nsteps);
     auto time = get_time() - tstart;
 
     for(auto i=0; i<std::min(decltype(n){20},n); ++i) {

@@ -14,9 +14,11 @@ double dot_host(const double *x, const double* y, int n) {
 
 double dot_gpu(const double *x, const double* y, int n) {
     double sum = 0;
-
     // TODO: implement dot prod with OpenACC
-
+#pragma acc parallel loop reduction(+:sum) copy(sum) copyin(x[0:n]) copyin(y[0:n])
+    for(auto i=0; i<n; ++i) {
+      sum += x[i]*y[i];
+    }
     return sum;
 }
 
