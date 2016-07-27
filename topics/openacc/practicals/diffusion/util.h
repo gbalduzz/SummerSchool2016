@@ -152,6 +152,10 @@ T* malloc_host(size_t N, T value=T()) {
     return ptr;
 }
 
+inline int gridSize(const int n,const  int block_dim){
+  return  (n+block_dim-1)/block_dim;
+}
+
 #ifdef PGI
 static double get_time()
 {
