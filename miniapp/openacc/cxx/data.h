@@ -41,7 +41,7 @@ public:
 
     ptr_ = new double[xdim*ydim];
     // TODO: copy this object to the GPU; take care of ptr_ as well
-#pragma acc enter data async(1)  copyin(*this) copyin(ptr_[0:xdim*ydim])
+#pragma acc enter data async(1)  copyin(this) copyin(ptr_[0:xdim*ydim])
   };
 
   // destructor
@@ -62,7 +62,7 @@ public:
     ydim_ = ydim;
 
     // TODO: copy this object to the GPU; take care of ptr_ as well
-#pragma acc enter data async(1)  copyin(*this) copyin(ptr_[0:xdim*ydim])
+#pragma acc enter data async(1)  copyin(this) copyin(ptr_[0:xdim*ydim])
   }
 
   void update_host()
@@ -129,7 +129,7 @@ private:
   void free() {
     if (ptr_) {
       // TODO: delete object on the device
-#pragma acc exit delete(ptr_)
+#pragma acc exit data delete(ptr_)
       delete[] ptr_;
     }
 

@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 
 #ifdef OPENACC_DATA
     // DONE?: Create/move necessary data to GPU
-#pragma acc data create(x0[0:buffer_size]) copyout(x1[0:buffer_size])
+#pragma acc data copyout(x0[0:buffer_size]) copyout(x1[0:buffer_size])
   #endif
     {
         // set initial conditions of 0 everywhere

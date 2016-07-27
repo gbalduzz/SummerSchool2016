@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 
+#ifndef OPENACC_DATA
 namespace kernels{
 __global__
 void diffusion(const double x0[], double x1[], const int nx, const int ny, const double dt) {
@@ -15,17 +16,18 @@ void diffusion(const double x0[], double x1[], const int nx, const int ny, const
                             + x0[pos-1]  + x0[pos+1]);
 }
 } // kernels
+#endif
 
 void diffusion_gpu(const double *x0, double *x1, int nx, int ny, double dt)
 {
   int i, j;
-  auto width = nx+2;
+  auto width = nx;
 
 #ifdef OPENACC_DATA
   // TODO: Offload the following two loops on GPU
 #pragma acc parallel loop present(x1,x0) independent  collapse(2)
-    for (j = 1; j < ny+1; ++j) {
-        for (i = 1; i < nx+1; ++i) {
+    for (j = 1; j < ny-1; ++j) {
+        for (i = 1; i < nx-1; ++i) {
             auto pos = i + j*width;
             x1[pos] = x0[pos] + dt * (-4.*x0[pos]
                                       + x0[pos-width] + x0[pos+width]

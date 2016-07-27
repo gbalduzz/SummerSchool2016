@@ -122,7 +122,7 @@ void ss_scaled_diff(Field& y, const double alpha,
     Field const& l, Field const& r, const int N)
 {
     // TODO: offload this loop on the GPU
-#pragma acc parallel loop independent present(x,l,r)
+#pragma acc parallel loop independent present(y,l,r)
     for (int i = 0; i < N; i++)
         y[i] = alpha * (l[i] - r[i]);
 }

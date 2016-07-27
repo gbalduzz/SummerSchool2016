@@ -44,7 +44,7 @@ void initial_condition(Field &x_new, int nx, int ny)
     double radius = fmin(xc, yc) / 2.0;
 
     // TODO: offload the following two loops to the GPU
-#pragma acc parallel loop independent collapse(2) present(x_new)
+#pragma acc parallel loop independent  present(x_new)
     for (int j = 0; j < ny; j++) {
         const double y = (j - 1) * options.dx;
         for (int i = 0; i < nx; i++) {
