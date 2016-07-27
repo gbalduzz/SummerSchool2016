@@ -18,6 +18,7 @@ void fill_gpu(T *v, T value, int n);
 
 void write_to_file(int nx, int ny, double* data);
 
+
 __global__
 void diffusion(double *x0, double *x1, int nx, int ny, double dt) {
 // TODO : implement stencil using 2d launch configuration
@@ -29,6 +30,19 @@ void diffusion(double *x0, double *x1, int nx, int ny, double dt) {
 //                   + x0[i-1,j] + x0[i+1,j]);
 //    }
 //  }
+  const int i = blockDim.x * blockIdx.x +threadIdx.x +1;
+  const int j = blockDim.y * blockIdx.y +threadIdx.y +1;
+#define LINDEX(i,j) (i)+(j)*nx
+  if(i < nx-1 && j < ny-1)
+  x1[LINDEX(i,j)] =  x0[LINDEX(i,j)] +
+    dt * (-4.*x0[LINDEX(i,j)] + 
+	  x0[LINDEX(i,j-1)] + x0[LINDEX(i,j+1)] +
+	  x0[LINDEX(i-1,j)] + x0[LINDEX(i+1,j)]);   
+#undef LINDEX
+}
+
+inline int gridSize(const int n,const  int block_dim){
+  return  (n+block_dim-1)/block_dim;
 }
 
 int main(int argc, char** argv) {
@@ -72,6 +86,9 @@ int main(int argc, char** argv) {
     // time stepping loop
     for(auto step=0; step<nsteps; ++step) {
         // TODO: launch the diffusion kernel in 2D
+      dim3 block(16,16);
+      dim3 grid(gridSize(nx-2,16), gridSize(ny-2,16));
+      diffusion<<<grid,block>>>(x0,x1,nx,ny,dt);
 
         std::swap(x0, x1);
     }

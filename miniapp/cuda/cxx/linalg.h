@@ -59,7 +59,7 @@ namespace linalg
     // computes y := alpha*x
     // alpha is scalar
     // y and x are vectors on length n
-    void ss_scale(Field& y, const double alpha, Field& x);
+    void ss_scale(Field& y, const double alpha, const Field& x);
 
     // computes linear combination of two vectors y := alpha*x + beta*z
     // alpha and beta are scalar

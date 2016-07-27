@@ -55,109 +55,40 @@ namespace kernels {
     __global__
     void stencil_interior(double* S, const double *U)
     {
-        // TODO : implement the interior stencil
-        // EXTRA : can you make it use shared memory?
+      // TODO : implement the interior stencil
+      // EXTRA : can you make it use shared memory?
+      extern __shared__ double buffer[];
+      const int nx = params.nx;      
+      const int ny = params.ny;      
+      const int gi = (blockDim.x-2)*blockIdx.x+threadIdx.x;
+      const int gj = (blockDim.y-2)*blockIdx.y+threadIdx.y;
+      if( gi >= nx or gj >= ny) return;      
+      const int li = threadIdx.x;
+      const int lj = threadIdx.y;
+      const int lpos = li+blockDim.x*lj;
+      const int gpos = gi+nx*gj;
+      if(gi == 0) // north
+	buffer[lpos] = params.bndN[gj];
+      if(gi == ny-1) // south
+	buffer[lpos] = params.bndS[gj];
+      if(gj == 0) // west
+	buffer[lpos] = params.bndW[gi];
+      if(gj == nx-1) // east
+	buffer[lpos] = params.bndE[gi];
+      else
+	buffer[lpos] = U[gpos];
+      syncthreads();
+      if(li > 0 and li < blockDim.y and
+	 lj > 0 and lj < blockDim.x)
+	S[gpos] = -(4. + params.alpha) * buffer[lpos] +
+	  buffer[lpos-1] + buffer[lpos+1] +
+	  buffer[lpos+params.nx] + buffer[lpos-params.nx] +
+	  params.alpha * params.x_old[lpos] + 
+	  params.dxs * buffer[lpos] * (1. - buffer[lpos]);
     }
+} //  kernels
 
-    __global__
-    void stencil_east_west(double* S, const double *U) {
-        auto j = threadIdx.x + blockDim.x*blockIdx.x;
-
-        auto nx = params.nx;
-        auto ny = params.ny;
-        auto alpha = params.alpha;
-        auto dxs = params.dxs;
-
-        auto find_pos = [&nx] (size_t i, size_t j) {
-            return i + j * nx;
-        };
-
-        if(j>0 && j<ny-1) {
-            // EAST : i = nx-1
-            auto pos = find_pos(nx-1, j);
-            S[pos] = -(4. + alpha) * U[pos]
-                        + U[pos-1] + U[pos-nx] + U[pos+nx]
-                        + alpha*params.x_old[pos] + params.bndE[j]
-                        + dxs * U[pos] * (1.0 - U[pos]);
-
-            // TODO : do the stencil on the WEST side
-            // WEST : i = 0
-        }
-    }
-
-    __global__
-    void stencil_north_south(double* S, const double *U) {
-        auto i = threadIdx.x + blockDim.x*blockIdx.x;
-
-        auto nx = params.nx;
-        auto ny = params.ny;
-        auto alpha = params.alpha;
-        auto dxs = params.dxs;
-
-        if(i>0 && i<nx-1) {
-            // NORTH : j = ny -1
-            auto pos = i + nx*(ny-1);
-            S[pos] = -(4. + alpha) * U[pos]
-                        + U[pos-1] + U[pos+1] + U[pos-nx]
-                        + alpha*params.x_old[pos] + params.bndN[i]
-                        + dxs * U[pos] * (1.0 - U[pos]);
-
-            // TODO : do the stencil on the SOUTH side
-            // SOUTH : j = 0
-        }
-    }
-
-    __global__
-    void stencil_corners(double* S, const double* U) {
-        auto i = threadIdx.x + blockDim.x*blockIdx.x;
-
-        auto nx = params.nx;
-        auto ny = params.ny;
-        auto alpha = params.alpha;
-        auto dxs = params.dxs;
-
-        auto find_pos = [&nx] (size_t i, size_t j) {
-            return i + j * nx;
-        };
-
-        // only 1 thread executes this kernel
-        if(i==0) {
-            // NORTH-EAST
-            auto pos = find_pos(nx-1, ny-1);
-            S[pos] = -(4. + alpha) * U[pos]                     // central point
-                                   + U[pos-1]    + params.bndE[ny-1] // east and west
-                                   + U[pos-nx] + params.bndN[nx-1] // north and south
-                                   + alpha * params.x_old[pos]
-                                   + dxs * U[pos] * (1.0 - U[pos]);
-
-            // SOUTH-EAST
-            pos = find_pos(nx-1, 0);
-            S[pos] = -(4. + alpha) * U[pos]                     // central point
-                                   + U[pos-1]    + params.bndE[0]      // east and west
-                                   + params.bndS[nx-1]+ U[pos+nx]  // north and south
-                                   + alpha * params.x_old[pos]
-                                   + dxs * U[pos] * (1.0 - U[pos]);
-
-            // SOUTH-WEST
-            pos = find_pos(0, 0);
-            S[pos] = -(4. + alpha) * U[pos]                // central point
-                                   + params.bndW[0] + U[pos+1]    // east and west
-                                   + params.bndS[0] + U[pos+nx] // north and south
-                                   + alpha * params.x_old[pos]
-                                   + dxs * U[pos] * (1.0 - U[pos]);
-
-            // NORTH-WEST
-            pos = find_pos(0, ny-1);
-            S[pos] = -(4. + alpha) * U[pos]                 // central point
-                                   + params.bndW[nx-1]+ U[pos+1] // east and west
-                                   + U[pos-nx] + params.bndN[0]  // north and south
-                                   + alpha * params.x_old[pos]
-                                   + dxs * U[pos] * (1.0 - U[pos]);
-        }
-    }
-}
-
-void diffusion(data::Field const& U, data::Field &S)
+  void diffusion(data::Field const& U, data::Field &S)
 {
     using data::options;
 
@@ -185,21 +116,20 @@ void diffusion(data::Field const& U, data::Field &S)
     };
 
     // TODO: apply stencil to the interior grid points
+
     cuda_check_last_kernel("interior point stencil kernel launch");
+    constexpr int threads = 32;
+    const dim3 threads_grid(threads,threads);
+    const dim3 blocks_grid(calculate_grid_dim(nx+2, threads-2),
+			   calculate_grid_dim(ny+2, threads-2));
+    const int cache_size = (threads)*(threads);
+    kernels::stencil_interior
+      <<<blocks_grid, threads_grid, cache_size>>>
+      (S.device_data(), U.device_data());
+    // check
+       cuda_check_last_kernel("east-west stencil kernel");
 
-    // apply stencil at east-west boundary
-    auto bnd_grid_dim_y = calculate_grid_dim(ny, 64);
-    kernels::stencil_east_west<<<bnd_grid_dim_y, 64>>>(S.device_data(), U.device_data());
-    cuda_check_last_kernel("east-west stencil kernel");
-
-    // apply stencil at north-south boundary
-    auto bnd_grid_dim_x = calculate_grid_dim(nx, 64);
-    kernels::stencil_north_south<<<bnd_grid_dim_x, 64>>>(S.device_data(), U.device_data());
-    cuda_check_last_kernel("north-south stencil kernel");
-
-    // apply stencil at corners
-    kernels::stencil_corners<<<1, 1>>>(S.device_data(), U.device_data());
-    cuda_check_last_kernel("corner stencil kernel");
 }
 
 } // namespace operators
+  
