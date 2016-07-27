@@ -41,6 +41,7 @@ class Field {
 
         ptr_ = new double[xdim*ydim];
         // TODO: copy this object to the GPU; take care of ptr_ as well
+#pragma acc enter data async(1) copyin(ptr_[0:xdim*ydim]) copyin(*this)
     };
 
     // destructor

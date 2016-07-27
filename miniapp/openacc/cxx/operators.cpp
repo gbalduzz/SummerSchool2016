@@ -39,6 +39,7 @@ void diffusion(data::Field &U, data::Field &S)
     // different kernels for each loop
 
     // TODO: offload loops on the GPU
+#pragma acc parallel loop async(1) collapse(2) independent present(S,U)
     for (int j=1; j < jend; j++) {
         for (int i=1; i < iend; i++) {
             S(i,j) = -(4. + alpha) * U(i,j)               // central point
@@ -53,6 +54,7 @@ void diffusion(data::Field &U, data::Field &S)
     {
         int i = nx - 1;
         // TODO: offload loop on the GPU
+#pragma acc parallel loop async(1) independent present(S,U)
         for (int j = 1; j < jend; j++)
         {
             S(i,j) = -(4. + alpha) * U(i,j)
@@ -66,6 +68,7 @@ void diffusion(data::Field &U, data::Field &S)
     {
         int i = 0;
         // TODO: offload loop on the GPU
+#pragma acc parallel loop async(1) independent present(S,U)
         for (int j = 1; j < jend; j++)
         {
             S(i,j) = -(4. + alpha) * U(i,j)
@@ -89,6 +92,7 @@ void diffusion(data::Field &U, data::Field &S)
 
         // north boundary
         // TODO: offload loop on the GPU
+#pragma acc parallel loop async(1) independent present(S,U)
         for (int i = 1; i < iend; i++)
         {
             S(i,j) = -(4. + alpha) * U(i,j)
@@ -120,6 +124,7 @@ void diffusion(data::Field &U, data::Field &S)
 
         // south boundary
         // TODO: offload loop on the GPU
+#pragma acc parallel loop async(1) independent present(S,U)
         for (int i = 1; i < iend; i++)
         {
             S(i,j) = -(4. + alpha) * U(i,j)
