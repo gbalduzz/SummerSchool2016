@@ -88,3 +88,4 @@ int main(int argc, char** argv) {
     write_to_file(nx, ny, x_res);
     return 0;
 }
+on

@@ -56,6 +56,7 @@ double ss_dot(Field const& x, Field const& y, const int N)
     double result = 0;
 
     // TODO: offload this loop on the GPU
+#pragma acc parallel loop reduction(+:result) present(x,y)
     for (int i = 0; i < N; i++)
         result += x[i] * y[i];
 
@@ -69,7 +70,8 @@ double ss_norm2(Field const& x, const int N)
     double result = 0;
 
     // TODO: offload this loop on the GPU
-    for (int i = 0; i < N; i++)
+#pragma acc parallel loop reduction(+:result) present(x)
+  for (int i = 0; i < N; i++)
         result += x[i] * x[i];
 
     return sqrt(result);
@@ -81,6 +83,7 @@ double ss_norm2(Field const& x, const int N)
 void ss_fill(Field& x, const double value, const int N)
 {
     // TODO: offload this loop on the GPU
+#pragma acc parallel loop independent present(x)
     for (int i = 0; i < N; i++)
         x[i] = value;
 }
@@ -95,6 +98,7 @@ void ss_fill(Field& x, const double value, const int N)
 void ss_axpy(Field& y, const double alpha, Field const& x, const int N)
 {
     // TODO: offload this loop on the GPU
+#pragma acc parallel loop independent present(x,y)
     for (int i = 0; i < N; i++)
         y[i] += alpha * x[i];
 }
@@ -106,6 +110,7 @@ void ss_add_scaled_diff(Field& y, Field const& x, const double alpha,
     Field const& l, Field const& r, const int N)
 {
     // TODO: offload this loop on the GPU
+#pragma acc parallel loop independent present(x,l,r)
     for (int i = 0; i < N; i++)
         y[i] = x[i] + alpha * (l[i] - r[i]);
 }
@@ -117,6 +122,7 @@ void ss_scaled_diff(Field& y, const double alpha,
     Field const& l, Field const& r, const int N)
 {
     // TODO: offload this loop on the GPU
+#pragma acc parallel loop independent present(x,l,r)
     for (int i = 0; i < N; i++)
         y[i] = alpha * (l[i] - r[i]);
 }
@@ -127,6 +133,7 @@ void ss_scaled_diff(Field& y, const double alpha,
 void ss_scale(Field& y, const double alpha, Field& x, const int N)
 {
     // TODO: offload this loop on the GPU
+#pragma acc parallel loop independent present(x,y)
     for (int i = 0; i < N; i++)
         y[i] = alpha * x[i];
 }
@@ -138,6 +145,7 @@ void ss_lcomb(Field& y, const double alpha, Field& x, const double beta,
     Field const& z, const int N)
 {
     // TODO: offload this loop on the GPU
+#pragma acc parallel loop independent present(x,y,z)
     for (int i = 0; i < N; i++)
         y[i] = alpha * x[i] + beta * z[i];
 }
@@ -147,6 +155,7 @@ void ss_lcomb(Field& y, const double alpha, Field& x, const double beta,
 void ss_copy(Field& y, Field const& x, const int N)
 {
     // TODO: offload this loop on the GPU
+#pragma acc parallel loop independent present(x,y)
     for (int i = 0; i < N; i++)
         y[i] = x[i];
 }

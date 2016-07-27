@@ -44,10 +44,11 @@ void initial_condition(Field &x_new, int nx, int ny)
     double radius = fmin(xc, yc) / 2.0;
 
     // TODO: offload the following two loops to the GPU
+#pragma acc parallel loop independent collapse(2) present(x_new)
     for (int j = 0; j < ny; j++) {
-        double y = (j - 1) * options.dx;
+        const double y = (j - 1) * options.dx;
         for (int i = 0; i < nx; i++) {
-            double x = (i - 1) * options.dx;
+            const double x = (i - 1) * options.dx;
             if ((x - xc) * (x - xc) + (y - yc) * (y - yc) < radius * radius)
                 x_new(i, j) = 0.1;
         }
@@ -174,7 +175,8 @@ int main(int argc, char* argv[])
 
     // start timer
     // TODO: Wait for active queues before taking a timestamp
-    double timespent = -omp_get_wtime();
+#pragma acc wait
+  double timespent = -omp_get_wtime();
 
     // main timeloop
     for (int timestep = 1; timestep <= nt; timestep++)
@@ -226,6 +228,7 @@ int main(int argc, char* argv[])
 
     // get times
     // TODO: Wait for active queues before taking a timestamp
+#pragma acc wait
     timespent += omp_get_wtime();
 
     // Update the host copy

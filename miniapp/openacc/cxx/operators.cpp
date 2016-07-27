@@ -54,7 +54,7 @@ void diffusion(data::Field &U, data::Field &S)
     {
         int i = nx - 1;
         // TODO: offload loop on the GPU
-#pragma acc parallel loop async(1) independent present(S,U)
+#pragma acc parallel loop async(2) independent present(S,U)
         for (int j = 1; j < jend; j++)
         {
             S(i,j) = -(4. + alpha) * U(i,j)
@@ -68,7 +68,7 @@ void diffusion(data::Field &U, data::Field &S)
     {
         int i = 0;
         // TODO: offload loop on the GPU
-#pragma acc parallel loop async(1) independent present(S,U)
+#pragma acc parallel loop async(3) independent present(S,U)
         for (int j = 1; j < jend; j++)
         {
             S(i,j) = -(4. + alpha) * U(i,j)
@@ -92,7 +92,7 @@ void diffusion(data::Field &U, data::Field &S)
 
         // north boundary
         // TODO: offload loop on the GPU
-#pragma acc parallel loop async(1) independent present(S,U)
+#pragma acc parallel loop async(4) independent present(S,U)
         for (int i = 1; i < iend; i++)
         {
             S(i,j) = -(4. + alpha) * U(i,j)
@@ -124,7 +124,7 @@ void diffusion(data::Field &U, data::Field &S)
 
         // south boundary
         // TODO: offload loop on the GPU
-#pragma acc parallel loop async(1) independent present(S,U)
+#pragma acc parallel loop async(5) independent present(S,U)
         for (int i = 1; i < iend; i++)
         {
             S(i,j) = -(4. + alpha) * U(i,j)
@@ -148,6 +148,8 @@ void diffusion(data::Field &U, data::Field &S)
         + 12 * (nx - 2) * (ny - 2) // interior points
         + 11 * (nx - 2  +  ny - 2) // NESW boundary points
         + 11 * 4;                                  // corner points
+
+#pragma acc wait
 }
 
 } // namespace operators
